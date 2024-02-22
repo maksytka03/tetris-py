@@ -20,7 +20,7 @@ figures_pos = {
     "S": [(-1, 1), (0, 1), (0, 0), (1, 0)],
     "Z": [(-1, 0), (0, 0), (0, 1), (1, 1)],
 }
-figures = [[pygame.Rect(x + W // 2, y + 1, 1, 1) for x, y in coordinates] for coordinates in figures_pos.values()]  # starting values for tetrominoes
+figures = [[pygame.Rect(x + W // 2, y, 1, 1) for x, y in coordinates] for coordinates in figures_pos.values()]  # starting values for tetrominoes
 figure_rect = pygame.Rect(0, 0, TILE - 2, TILE - 2)  # TILE - 2 so that the tiles don't fill in a tile entirely
 field = [[0 for i in range(W)] for j in range(H)]
 
@@ -72,9 +72,18 @@ while True:
                 figure = deepcopy(random.choice(figures))
                 break
 
+    line = H - 1
+    for row in range(H - 1, -1, -1):
+        count = 0
+        for i in range(W):
+            if field[row][i]:
+                count += 1
+            field[line][i] = field[row][i]
+        if count < W:
+            line -= 1
+
     # rotation
-    center = figure[0]
-    print(center)
+    center = figure[1]
 
     for i in range(4):  # every figure is 4 tiles
         figure[i].x += dx  # increase figure's x coordinates by dx
@@ -82,7 +91,11 @@ while True:
             figure = figure_old
             break
 
-        print(figure[i].x, figure[i].y)
+        if rotate:
+            x = figure[i].y - center.y
+            y = figure[i].x - center.x
+            figure[i].x = center.x - x
+            figure[i].y = center.y + y
 
         figure_rect.x = figure[i].x * TILE
         figure_rect.y = figure[i].y * TILE
