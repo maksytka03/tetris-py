@@ -20,14 +20,14 @@ figures_pos = {
     "S": [(-1, 1), (0, 1), (0, 0), (1, 0)],
     "Z": [(-1, 0), (0, 0), (0, 1), (1, 1)],
 }
-figures = [[pygame.Rect(x + W // 2, y, 1, 1) for x, y in coordinates] for coordinates in figures_pos.values()]  # starting values for tetrominoes
+figures = [[pygame.Rect(x + W // 2, y + 1, 1, 1) for x, y in coordinates] for coordinates in figures_pos.values()]  # starting values for tetrominoes
 figure_rect = pygame.Rect(0, 0, TILE - 2, TILE - 2)  # TILE - 2 so that the tiles don't fill in a tile entirely
 field = [[0 for i in range(W)] for j in range(H)]
 
 figure = deepcopy(random.choice(figures))
 count, speed, limit = 0, 60, 2000
 
-def check_borders():
+def check_borders(figure):
     if figure[i].x < 0 or figure[i].x > W - 1:
         return False
     if figure[i].y > H - 1 or field[figure[i].y][figure[i].x]:
@@ -57,6 +57,7 @@ while True:
             limit = 2000
 
     for rect in grid:
+        # draw the grid
         pygame.draw.rect(window, (50, 50, 50), rect, 1)  # draw all the "rectangles" with 1 width to make them look like a grid
 
     figure_old = deepcopy(figure)
@@ -66,30 +67,32 @@ while True:
         count = 0
         for i in range(4):
             figure[i].y += 1
-            if not check_borders():
+            
+            # handle lines
+            line = H - 1
+            # iterate over all the lines starting from the bottom
+            for row in range(H - 1, -1, -1):
+                count = sum(field[row])  # count how much of a line is covered
+                if count < W:
+                    for j in range(W):
+                        field[line][j] = field[row][j]
+                    line -= 1
+                    
+            if not check_borders(figure):  # if figure is at the bottom
                 for i in range(4):
                     field[figure_old[i].y][figure_old[i].x] = 1
                 figure = deepcopy(random.choice(figures))
                 break
 
-    line = H - 1
-    for row in range(H - 1, -1, -1):
-        count = 0
-        for i in range(W):
-            if field[row][i]:
-                count += 1
-            field[line][i] = field[row][i]
-        if count < W:
-            line -= 1
-
-    # rotation
+    # rotation center
     center = figure[1]
 
     for i in range(4):  # every figure is 4 tiles
         figure[i].x += dx  # increase figure's x coordinates by dx
-        if not check_borders():
+        if not check_borders(figure):
             figure = figure_old
             break
+
 
         if rotate:
             x = figure[i].y - center.y
@@ -97,9 +100,11 @@ while True:
             figure[i].x = center.x - x
             figure[i].y = center.y + y
 
+
         figure_rect.x = figure[i].x * TILE
         figure_rect.y = figure[i].y * TILE
         pygame.draw.rect(window, (255, 255, 0), figure_rect)
+
 
     for y, rows in enumerate(field):  # iterate over the field's rows
         for x, col in enumerate(rows):  # iterate over the field's columns
